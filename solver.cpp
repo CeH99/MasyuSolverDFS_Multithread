@@ -5,29 +5,29 @@
 
 using namespace std;
 
-// Конструктор класу Solver
+// Constructor of the Solver class
 Solver::Solver(const vector<vector<char>>& initialGrid)
     : Rows(static_cast<int>(initialGrid.size())),
     Cols(Rows ? static_cast<int>(initialGrid[0].size()) : 0),
     puzzleGrid(initialGrid),
     isSolutionFound(false) {
-    solutionPathPoints.clear(); // Ініціалізація списку з точками шляху
+    solutionPathPoints.clear(); // Initialize path point list
 }
 
-// Статичний метод для виводу довільної сітки у вигляді рамки
+// Static method to print any grid in a framed view
 void Solver::printGridFrame(const vector<vector<char>>& frameGrid) {
     int frameRows = static_cast<int>(frameGrid.size());
     if (frameRows == 0) return;
 
     int frameCols = static_cast<int>(frameGrid[0].size());
 
-    // Виводимо верхню межу
+    // Print top border
     cout << "Size: " << frameRows << "x" << frameCols << endl;
     cout << "+";
     for (int j = 0; j < frameCols; ++j) cout << "---+";
     cout << "\n";
 
-    // Вивід кожного рядка з роздільниками
+    // Print each row with separators
     for (int i = 0; i < frameRows; ++i) {
         cout << "|";
         for (int j = 0; j < frameCols; ++j) {
@@ -39,32 +39,30 @@ void Solver::printGridFrame(const vector<vector<char>>& frameGrid) {
     }
 }
 
-// Вивід поточної сітки (основної головоломки)
+// Print the main puzzle grid
 void Solver::printGridFrame() const {
     printGridFrame(puzzleGrid);
 }
 
-// Перевірка, чи координати в межах поля
+// Check if the given cell coordinates are within grid boundaries
 bool Solver::isValidCell(int row, int col) const {
     return row >= 0 && row < Rows && col >= 0 && col < Cols;
 }
 
-// Якщо поточна клітинка типу 'B', зміна напрямку дозволена лише якщо він дійсно змінюється
+// For 'B' cell: turn is only allowed if direction actually changes
 bool Solver::isTurnRequired(int row, int col, int prevDir, int nextDir) const {
     if (puzzleGrid[row][col] == 'B') return prevDir != -1 && prevDir != nextDir;
     return true;
 }
 
-// Якщо клітинка 'W', то зміна напрямку заборонена
+// For 'W' cell: turning is not allowed
 bool Solver::isTurnForbidden(int row, int col, int prevDir, int nextDir) const {
     if (puzzleGrid[row][col] == 'W') return prevDir != -1 && prevDir != nextDir;
     return false;
 }
 
-// Рекурсивна заливка (флуд-філ) для перевірки досяжності порожніх клітинок
-void Solver::floodFill(int row, int col,
-                       const vector<vector<bool>>& visitedCells,
-                       vector<vector<bool>>& reachableCells) const {
+// Recursive flood fill to mark reachable empty cells
+void Solver::floodFill(int row, int col, const vector<vector<bool>>& visitedCells, vector<vector<bool>>& reachableCells) const {
     if (!isValidCell(row, col) || visitedCells[row][col] || reachableCells[row][col]) return;
 
     char cellValue = puzzleGrid[row][col];
@@ -78,7 +76,7 @@ void Solver::floodFill(int row, int col,
     }
 }
 
-// Перевірка, чи всі порожні клітинки доступні для проходження
+// Check if all empty cells are reachable
 bool Solver::allEmptyReachable(const vector<vector<bool>>& visitedCells) const {
     vector<vector<bool>> reachableCells(Rows, vector<bool>(Cols, false));
     bool foundEmpty = false;
@@ -100,14 +98,9 @@ bool Solver::allEmptyReachable(const vector<vector<bool>>& visitedCells) const {
     return true;
 }
 
-// Основний алгоритм пошуку в глибину з умовами гри
-bool Solver::dfs(int currentRow, int currentCol,
-                 int startRow, int startCol,
-                 int prevDirection,
-                 vector<vector<bool>>& visitedCells,
-                 vector<PathPoint>& currentPath,
-                 int visitedEmptyCount,
-                 int totalEmptyCount) {
+// Main DFS algorithm with game rules applied
+bool Solver::dfs(int currentRow, int currentCol, int startRow, int startCol, int prevDirection, vector<vector<bool>>& visitedCells,
+                vector<PathPoint>& currentPath, int visitedEmptyCount, int totalEmptyCount) {
     if (isSolutionFound) return false;
 
     static int rowDelta[4] = {-1, 0, 1, 0}, colDelta[4] = {0, 1, 0, -1};
@@ -118,7 +111,7 @@ bool Solver::dfs(int currentRow, int currentCol,
 
         if (!isValidCell(nextRow, nextCol)) continue;
 
-        // Якщо повернулися в початкову точку і виконано всі умови — рішення знайдено
+        // If returned to the start point with all conditions met — solution found
         if (nextRow == startRow && nextCol == startCol) {
             if (visitedEmptyCount == totalEmptyCount && currentPath.size() > 1
                 && isTurnRequired(currentRow, currentCol, prevDirection, direction)
@@ -128,7 +121,6 @@ bool Solver::dfs(int currentRow, int currentCol,
             }
             continue;
         }
-
         if (visitedCells[nextRow][nextCol] ||
             !isTurnRequired(currentRow, currentCol, prevDirection, direction) ||
             isTurnForbidden(currentRow, currentCol, prevDirection, direction)) {
@@ -137,7 +129,7 @@ bool Solver::dfs(int currentRow, int currentCol,
 
         visitedCells[nextRow][nextCol] = true;
         currentPath.push_back({nextRow, nextCol, direction});
-        int addedEmpty = (puzzleGrid[nextRow][nextCol] == '.');
+        int addedEmpty = (puzzleGrid[nextRow][nextCol] == '.'); 
 
         if (allEmptyReachable(visitedCells) &&
             dfs(nextRow, nextCol, startRow, startCol, direction,
@@ -145,14 +137,14 @@ bool Solver::dfs(int currentRow, int currentCol,
             return true;
         }
 
-        // Відкат
+        // Backtrack
         currentPath.pop_back();
         visitedCells[nextRow][nextCol] = false;
     }
     return false;
 }
 
-// Потік для паралельного пошуку рішення з окремої стартової точки
+// Thread function to run DFS from a specific starting point
 void Solver::worker(int startRow, int startCol, int totalEmptyCount) {
     vector<vector<bool>> visitedCells(Rows, vector<bool>(Cols, false));
     visitedCells[startRow][startCol] = true;
@@ -168,7 +160,7 @@ void Solver::worker(int startRow, int startCol, int totalEmptyCount) {
     }
 }
 
-// Ініціація багатопотокового пошуку
+// Initiates multithreaded path search
 void Solver::findSolution() {
     vector<pair<int,int>> startingPoints;
     int totalEmptyCount = 0;
@@ -190,7 +182,7 @@ void Solver::findSolution() {
     for (auto& t : threads) t.join();
 }
 
-// Візуалізація шляху на консолі
+// Visualizes the solution path in the console
 void Solver::printPathVisualization() const {
     int vizRows = Rows * 2;
     int vizCols = Cols * 4;
@@ -217,7 +209,7 @@ void Solver::printPathVisualization() const {
     for (const auto& rowStr : canvas) cout << rowStr << "\n";
 }
 
-// Збереження візуалізації у файл
+// Saves the solution visualization to a file
 void Solver::PrintSolutionToFile(const string& outFileBase) const {
     string filename = outFileBase + ".txt";
     ofstream fout(filename);
@@ -251,7 +243,7 @@ void Solver::PrintSolutionToFile(const string& outFileBase) const {
     cout << "Saved visualization to " << filename << "\n";
 }
 
-// Отримання маршруту рішення
+// Returns the computed solution path
 const vector<Solver::PathPoint>& Solver::getSolutionPathPoints() const {
     return solutionPathPoints;
 }

@@ -7,7 +7,6 @@
 int main() {
     int continueFlag = 1;
     do {
-        // Вибір режиму введення
         std::cout << "Select input method:\n"
                   << "1) Use preset puzzle\n"
                   << "2) Load puzzle from file\n"
@@ -15,7 +14,7 @@ int main() {
         int mode;
         std::cin >> mode;
 
-        // Заздалегідь визначені головоломки
+        // templates
         std::vector<std::vector<std::vector<char>>> presets = {
             {
                 {'.','.','.','.','W','.','.','B','.','.','.','.','.','.'},

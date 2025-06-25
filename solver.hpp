@@ -5,66 +5,66 @@
 #include <string>
 #include <mutex>
 
-// Клас Solver реалізує алгоритм пошуку замкнутого шляху по головоломці
+// Solver class implements an algorithm to find a closed path through a puzzle
 class Solver {
 public:
-    // Структура, що описує одну точку шляху:
-    // координати клітинки (row, col) та напрям руху (0=вгору, 1=право, 2=вниз, 3=вліво)
+    // Structure representing a path point:
+    // cell coordinates (row, col) and movement direction (0=up, 1=right, 2=down, 3=left)
     struct PathPoint {
         int row;
         int col;
         int direction;
     };
 
-    // Конструктор, приймає початкову сітку головоломки
+    // Constructor takes the initial puzzle grid
     Solver(const std::vector<std::vector<char>>& initialGrid);
 
-    // Запускає пошук рішення
+    // Starts the solution search
     void findSolution();
 
-    // Виводить поточну сітку у вигляді рамки (основний метод)
+    // Prints the current puzzle grid in a framed format (main method)
     void printGridFrame() const;
 
-    // Статичний метод: вивід будь-якої сітки з рамкою
+    // Static method: prints any given grid with a frame
     static void printGridFrame(const std::vector<std::vector<char>>& frameGrid);
 
-    // Вивід маршруту рішення у вигляді ASCII-графіки в консолі
+    // Prints the solution path as ASCII art to the console
     void printPathVisualization() const;
 
-    // Зберігає результат рішення у текстовий файл (із візуалізацією)
+    // Saves the solution visualization to a text file
     void PrintSolutionToFile(const std::string& outFileBase) const;
 
-    // Повертає вектор точок знайденого шляху
+    // Returns the vector of points representing the found path
     const std::vector<PathPoint>& getSolutionPathPoints() const;
 
 private:
-    int Rows;  // Кількість рядків у сітці
-    int Cols;  // Кількість стовпців
-    std::vector<std::vector<char>> puzzleGrid; // Сітка головоломки
-    bool isSolutionFound; // Флаг: чи знайдено рішення
-    std::vector<PathPoint> solutionPathPoints; // Знайдений маршрут
+    int Rows;  // Number of rows in the grid
+    int Cols;  // Number of columns in the grid
+    std::vector<std::vector<char>> puzzleGrid; // The puzzle grid itself
+    bool isSolutionFound; // Flag indicating whether a solution has been found
+    std::vector<PathPoint> solutionPathPoints; // The discovered path
 
-    // Для синхронізації доступу з різних потоків
+    // Synchronization mutex for thread-safe operations
     mutable std::mutex outputMutex;
 
-    // Перевірка, чи координати в межах сітки
+    // Checks whether given coordinates are within grid bounds
     bool isValidCell(int row, int col) const;
 
-    // Чи потрібна зміна напрямку (залежно від клітинки)
+    // Determines if a direction change is required based on the current cell
     bool isTurnRequired(int row, int col, int prevDir, int nextDir) const;
 
-    // Чи заборонена зміна напрямку (залежно від клітинки)
+    // Determines if a direction change is forbidden based on the current cell
     bool isTurnForbidden(int row, int col, int prevDir, int nextDir) const;
 
-    // Рекурсивна заливка, щоб перевірити досяжність
+    // Recursive flood fill to check cell reachability
     void floodFill(int row, int col,
                    const std::vector<std::vector<bool>>& visitedCells,
                    std::vector<std::vector<bool>>& reachableCells) const;
 
-    // Чи всі порожні клітинки досяжні (оптимізація)
+    // Checks if all empty cells are reachable (optimization)
     bool allEmptyReachable(const std::vector<std::vector<bool>>& visitedCells) const;
 
-    // Головна функція пошуку в глибину (DFS)
+    // Core depth-first search function
     bool dfs(int currentRow, int currentCol,
              int startRow, int startCol,
              int prevDirection,
@@ -73,7 +73,7 @@ private:
              int visitedEmptyCount,
              int totalEmptyCount);
 
-    // Один потік обробки з певної стартової точки
+    // Worker thread function for a specific start point
     void worker(int startRow, int startCol, int totalEmptyCount);
 };
 
